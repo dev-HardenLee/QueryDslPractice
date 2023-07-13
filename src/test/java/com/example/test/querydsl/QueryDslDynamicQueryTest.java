@@ -6,7 +6,6 @@ import javax.persistence.EntityManager;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -14,15 +13,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.test.entity.ClubMember;
 import com.example.test.entity.QClubMember;
-import com.example.test.entity.QTeam;
 import com.example.test.entity.Team;
-import com.querydsl.core.Tuple;
+import com.querydsl.core.BooleanBuilder;
+import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 
 @SpringBootTest
 @Transactional
-class QueryDslJoinTest {
-	
+class QueryDslDynamicQueryTest {
+
 	@Autowired
 	private EntityManager em;
 	
@@ -48,84 +47,67 @@ class QueryDslJoinTest {
 		em.persist(member2);
 		em.persist(member3);
 		em.persist(member4);
-		
-		em.flush();
-		em.clear();
 	}// before
 	
 	@Test
-	@DisplayName("모든 선수들과 선수들이 소속된 팀 정보를 출력하라.")
 	@Disabled
-	void joinTest1() {
+	void dynamicQuery_BooleanBuilder() {
+		String  username = "Bruno";
+		Integer age      = 28;
 		
 		QClubMember clubMember = QClubMember.clubMember;
-		QTeam       team       = QTeam.team;
-		
-		List<Tuple> memberList = queryFactory
-				.select(clubMember, team)
-				.from(clubMember)
-				.join(clubMember.team, team)
-				.fetch();
-		
-		for (Tuple tuple : memberList) {
-			System.out.println(tuple.get(clubMember) + ", " + tuple.get(team));
-		}// for
-		
-	}// joinTest1
-	
-	@Test
-	@DisplayName("모든 선수들을 출력하되, 소속팀이 맨유인 팀만 팀 정보를 표시하라.")
-	@Disabled
-	void joinTest2() {
-		QClubMember clubMember = QClubMember.clubMember;
-		QTeam       team       = QTeam.team;
-		
-		List<Tuple> memberList = queryFactory
-				.select(clubMember, team)
-				.from(clubMember)
-				.leftJoin(clubMember.team, team).on(team.name.eq("Manchester United"))
-				.fetch();
-		
-		for (Tuple tuple : memberList) {
-			System.out.println(tuple.get(clubMember) + ", " + tuple.get(team));
-		}// for
-	}// joinTest2
-	
-	@Test
-	@DisplayName("fetch join test")
-	@Disabled
-	void fetchJoinTest() {
-		QClubMember clubMember = QClubMember.clubMember;
-		QTeam       team       = QTeam.team;
 		
 		List<ClubMember> memberList = queryFactory
-				.selectFrom(clubMember)
-				.join(clubMember.team, team).fetchJoin()
+				.select(clubMember)
+				.from(clubMember)
+				.where(searchClubMember(clubMember, username, age))
 				.fetch();
 		
 		for (ClubMember cm : memberList) {
-			boolean isloaded = em.getEntityManagerFactory().getPersistenceUnitUtil().isLoaded(cm.getTeam());
-			
-			System.out.println(cm + ", isloaded : " + isloaded);
-		}// foreach
-	}// fetchJoinTest
+			System.out.println(cm);
+		}// for
+	}// dynamicQuery_BooleanBuilder
+
+	private BooleanBuilder searchClubMember(QClubMember clubMember, String username, Integer age) {
+		BooleanBuilder builder = new BooleanBuilder();
+		
+		if(username != null) builder.and(clubMember.username.eq(username));		
+		if(age      != null) builder.and(clubMember.age.eq(age));
+		
+		return builder;
+	}// searchClubMember
 	
+	@Test
+	void dynamicQuery_WhereMultiParameter() {
+		String  username = "Bruno";
+		Integer age      = 28;
+		
+		QClubMember clubMember = QClubMember.clubMember;
+		
+		List<ClubMember> memberList = queryFactory
+				.select(clubMember)
+				.from(clubMember)
+				.where(usernameEq(username), ageEq(age))
+				.fetch();
+		
+		for (ClubMember cm : memberList) {
+			System.out.println(cm);
+		}// for
+	}// dynamicQuery_WhereMultiParameter
 	
+	private BooleanExpression usernameEq(String username) {
+		if(username == null) return null;
+		
+		return QClubMember.clubMember.username.eq(username);
+	}// usernameEq
+	 
+	private BooleanExpression ageEq(Integer age) {
+		if(age == null) return null;
+		
+		return QClubMember.clubMember.age.eq(age);
+	}// ageEq
 	
-	
-}// QueryDslJoinTest
-
-
-
-
-
-
-
-
-
-
-
-
+}// QueryDslBooleanBuilderTest
 
 
 

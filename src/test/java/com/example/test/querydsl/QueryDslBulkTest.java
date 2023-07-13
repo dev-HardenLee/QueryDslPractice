@@ -5,7 +5,6 @@ import java.util.List;
 import javax.persistence.EntityManager;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,15 +13,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.test.entity.ClubMember;
 import com.example.test.entity.QClubMember;
-import com.example.test.entity.QTeam;
 import com.example.test.entity.Team;
-import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 
 @SpringBootTest
 @Transactional
-class QueryDslJoinTest {
-	
+class QueryDslBulkTest {
+
 	@Autowired
 	private EntityManager em;
 	
@@ -48,72 +45,34 @@ class QueryDslJoinTest {
 		em.persist(member2);
 		em.persist(member3);
 		em.persist(member4);
-		
-		em.flush();
-		em.clear();
 	}// before
 	
 	@Test
-	@DisplayName("모든 선수들과 선수들이 소속된 팀 정보를 출력하라.")
-	@Disabled
-	void joinTest1() {
+	@DisplayName("모든 회원의 나이를 +1해라")
+	void bulkUpdate_age() {
+		em.flush();
+		em.clear();
 		
 		QClubMember clubMember = QClubMember.clubMember;
-		QTeam       team       = QTeam.team;
 		
-		List<Tuple> memberList = queryFactory
-				.select(clubMember, team)
-				.from(clubMember)
-				.join(clubMember.team, team)
-				.fetch();
+		long count = queryFactory
+				.update(clubMember)
+				.set(clubMember.age, clubMember.age.add(1))
+				.execute();
 		
-		for (Tuple tuple : memberList) {
-			System.out.println(tuple.get(clubMember) + ", " + tuple.get(team));
-		}// for
-		
-	}// joinTest1
-	
-	@Test
-	@DisplayName("모든 선수들을 출력하되, 소속팀이 맨유인 팀만 팀 정보를 표시하라.")
-	@Disabled
-	void joinTest2() {
-		QClubMember clubMember = QClubMember.clubMember;
-		QTeam       team       = QTeam.team;
-		
-		List<Tuple> memberList = queryFactory
-				.select(clubMember, team)
-				.from(clubMember)
-				.leftJoin(clubMember.team, team).on(team.name.eq("Manchester United"))
-				.fetch();
-		
-		for (Tuple tuple : memberList) {
-			System.out.println(tuple.get(clubMember) + ", " + tuple.get(team));
-		}// for
-	}// joinTest2
-	
-	@Test
-	@DisplayName("fetch join test")
-	@Disabled
-	void fetchJoinTest() {
-		QClubMember clubMember = QClubMember.clubMember;
-		QTeam       team       = QTeam.team;
+		System.out.println("count : " + count);
 		
 		List<ClubMember> memberList = queryFactory
-				.selectFrom(clubMember)
-				.join(clubMember.team, team).fetchJoin()
+				.select(clubMember)
+				.from(clubMember)
 				.fetch();
 		
 		for (ClubMember cm : memberList) {
-			boolean isloaded = em.getEntityManagerFactory().getPersistenceUnitUtil().isLoaded(cm.getTeam());
-			
-			System.out.println(cm + ", isloaded : " + isloaded);
-		}// foreach
-	}// fetchJoinTest
+			System.out.println(cm);
+		}// for
+	}// bulkUpdate_age
 	
-	
-	
-	
-}// QueryDslJoinTest
+}// QueryDslBulkTest
 
 
 

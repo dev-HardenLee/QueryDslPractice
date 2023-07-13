@@ -85,7 +85,7 @@ class QueryDslSortPagingAggregationTest {
 	void pagingTest() {
 		for(int i=1; i<=500; i++) em.persist(ClubMember.builder().username("PagingTestMember_" + i).age(50).team(null).build());
 		
-		PageRequest pageRequest = PageRequest.of(1, 10, Sort.by(Direction.DESC, "id"));
+		PageRequest pageRequest = PageRequest.of(0, 10, Sort.by(Direction.DESC, "id"));
 		
 		QClubMember clubMember = QClubMember.clubMember;
 		
